@@ -24,12 +24,12 @@ How it is used:
 ```cpp
 try
 {
-    const bool debug=true;
-		FastaGeneIndexer fasta("influenza.fna",debug); // a 1.4GB file that goes down to 428MB and shared between 3 gpus, ~142MB each, (RAM: 250MB used)
-    std::string sequence = fasta.getSequence(817586);// ACTG
+	const bool debug=true;
+	FastaGeneIndexer fasta("influenza.fna",debug); // a 1.4GB file that goes down to 428MB and shared between 3 gpus, ~142MB each, (RAM: 250MB used)
+	std::string sequence = fasta.getSequence(817586);// ACTG
 }
 catch (std::exception& ex)
 {
-		std::cout << ex.what();
+	std::cout << ex.what();
 }
 ```
