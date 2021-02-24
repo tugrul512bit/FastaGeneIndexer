@@ -16,3 +16,5 @@ How it works:
 It parses a ".fna" or ".faa" FASTA gene sequence file and indexes all parts into video-memory buffers to get high random-access performance (that scales well with number of graphics cards and cpu threads in use) to all indices. Saving RAM + disk usage lets program stream relevant "result" data to disk without stuttering, unless all video memory is needed elsewhere.
 
 Compression algorithm is Huffman Encoding so it suits well to any type of sequence (and its descriptor).
+
+For a system with 2.1GHz FX8150 + 3 low-end graphics cards (2GB memory each), this can store(and access) up to 24GB base pairs without using more than 1 GB RAM, at 250-300 MB/s throughput (multithreaded&cached readings) and 15microseconds latency (single threaded un-cached access).
