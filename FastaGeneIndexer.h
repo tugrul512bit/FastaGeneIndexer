@@ -327,9 +327,12 @@ public:
 
 			size_t n = totalBytes + pageSize - (totalBytes%pageSize);
 
-			std::cout<<"page size for virtual array = "<<pageSize<<" bytes"<<std::endl;
-			std::cout<<"virtual array size = "<<n<<" bytes"<<std::endl;
-			std::cout<<"file i/o size = "<<sizeIO<<" bytes"<<std::endl;
+			if(debug)
+			{
+				std::cout<<"page size for virtual array = "<<pageSize<<" bytes"<<std::endl;
+				std::cout<<"virtual array size = "<<n<<" bytes"<<std::endl;
+				std::cout<<"file i/o size = "<<sizeIO<<" bytes"<<std::endl;
+			}
 			GraphicsCardSupplyDepot gpu;
 			data = VirtualMultiArray<unsigned char>(n,gpu.requestGpus(),pageSize,numCachePerGpu,{1,1,1,1,1,1,1,1,1,1,1,1},VirtualMultiArray<unsigned char>::MemMult::UseVramRatios);
 		}
