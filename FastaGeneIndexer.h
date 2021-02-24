@@ -327,8 +327,8 @@ public:
 			}
 
 			int numCachePerGpu = sizeIO / pageSize;
-			if(numCachePerGpu>10)
-				numCachePerGpu=10;
+			if(numCachePerGpu>15)
+				numCachePerGpu=15;
 
 
 			size_t n = totalBytes + pageSize - (totalBytes%pageSize);
