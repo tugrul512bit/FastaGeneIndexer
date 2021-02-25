@@ -19,6 +19,20 @@ Compression algorithm is Huffman Encoding so it suits well to any type of sequen
 
 For a system with 2.1GHz FX8150 + 3 low-end graphics cards (2GB memory each), this can store(and access) ~20GB base pair data without using more than 1 GB RAM, at 250-300 MB/s throughput (multithreaded&cached readings) and 5-15microseconds latency (single threaded cached - un-cached access), without touching disk drives (but after a "slower" index initialization is complete).
 
+Compiler flags for example main.cpp:
+
+```
+g++-10 -std=c++17 -O3 -g3 -Wall -c -fmessage-length=0 -mavx -march=native 
+-funroll-loops -mtune=native -funsafe-math-optimizations -ftree-vectorize 
+-ffast-math  -fopenmp -pthread -fPIC -MMD -MP -MF"src/main.d" -MT"src/main.d" 
+-o "src/main.o" "../src/main.cpp"
+```
+
+Linker flags:
+```
+g++-10 -L/usr/local/cuda/lib64 -o "Virtualizer2"  ./src/main.o   -lOpenCL -lgomp -lpthread
+```
+
 How it is used:
 
 ```cpp
