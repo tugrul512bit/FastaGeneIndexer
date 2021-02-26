@@ -34,18 +34,18 @@ inline bool loadBit(const unsigned char & data, const int pos) noexcept
 	return (data>>pos)&1;
 }
 
-template<typename T>
+
 struct Node
 {
 	size_t count;
 	int self;
 	int leaf1;
 	int leaf2;
-	T data;
+	unsigned char data;
 	bool isLeaf;
 };
 
-template<typename T>
+
 class HuffmanTree
 {
 
@@ -60,37 +60,26 @@ public:
 
 	}
 
-	void add(T data)
+	void add(unsigned char data)
 	{
 		referenceMapDirect[data]++;
-		/*
-		if(referenceMap.find(data)==referenceMap.end())
-		{
-			referenceMap[data]=1;
-		}
-		else
-		{
-			referenceMap[data]++;
-		}
-		*/
+
 	}
 
 	void generateTree(const bool debug=false)
 	{
-		std::vector<Node<T>> sortedNodes;
+		std::vector<Node> sortedNodes;
 
 
 		int ctr=0;
-		//for(auto & e : referenceMap)
+
 		for(int i=0;i<256;i++)
 		{
 			size_t ct = referenceMapDirect[i];
 			if(ct>0)
 			{
-				Node<T> node;
+				Node node;
 
-				//node.data=e.first;
-				//node.count=e.second;
 				node.data=i;
 				node.count=ct;
 
@@ -104,13 +93,13 @@ public:
 			}
 		}
 
-		std::sort(sortedNodes.begin(), sortedNodes.end(),[](const Node<T> & n1, const Node<T> & n2){ return n1.count<n2.count;});
+		std::sort(sortedNodes.begin(), sortedNodes.end(),[](const Node & n1, const Node & n2){ return n1.count<n2.count;});
 
 		while(sortedNodes.size()>1)
 		{
-			Node<T> node1 = sortedNodes[0];
-			Node<T> node2 = sortedNodes[1];
-			Node<T> newNode;
+			Node node1 = sortedNodes[0];
+			Node node2 = sortedNodes[1];
+			Node newNode;
 			newNode.count = node1.count + node2.count;
 			newNode.data=0;
 			newNode.leaf1 = node1.self;
@@ -122,14 +111,14 @@ public:
 			sortedNodes.push_back(newNode);
 
 			referenceVec.push_back(newNode);
-			std::sort(sortedNodes.begin(), sortedNodes.end(),[](const Node<T> & n1, const Node<T> & n2){ return n1.count<n2.count;});
+			std::sort(sortedNodes.begin(), sortedNodes.end(),[](const Node & n1, const Node & n2){ return n1.count<n2.count;});
 			ctr++;
 		}
 
 		root = sortedNodes[0];
 
 
-		std::function<void(Node<T>,std::vector<bool>)> g = [&](Node<T> node, std::vector<bool> path){
+		std::function<void(Node,std::vector<bool>)> g = [&](Node node, std::vector<bool> path){
 			if(node.leaf1!=-1)
 			{
 				std::vector<bool> path1 = path;
@@ -146,7 +135,6 @@ public:
 
 			if((node.leaf1 == -1) && (node.leaf2 == -1))
 			{
-				//encodeMap[node.data]=path;
 				encodeDirect[node.data]=path;
 				encodeDirectSize[node.data]=path.size();
 			}
@@ -159,17 +147,6 @@ public:
 		if(debug)
 		{
 			std::cout<<"-------------------------------------"<<std::endl;
-			/*
-			for(const auto & e:encodeMap)
-			{
-				std::cout<<e.first<<": ";
-				for(const auto & f:e.second)
-				{
-					std::cout<<f<<" ";
-				}
-				std::cout<<std::endl;
-			}
-			*/
 
 			for(int i=0;i<256;i++)
 			{
@@ -187,51 +164,29 @@ public:
 		}
 	}
 
-	size_t getCount(T data)
+	size_t getCount(unsigned char data)
 	{
 		return referenceMapDirect[data];
 	}
 
 	inline
-	const std::vector<bool> & generateBits(T data) const noexcept
+	const std::vector<bool> & generateBits(unsigned char data) const noexcept
 	{
-		//return encodeMap[data];
 		return encodeDirect[data];
 	}
 
 	inline
-	const int & generateBitsSize(T data) const noexcept
+	const int & generateBitsSize(unsigned char data) const noexcept
 	{
 		return encodeDirectSize[data];
 	}
 
-	T followBits(const std::vector<bool> & path, int & idx) const
-	{
-		T result;
-		const Node<T> * curNode=&root;
-		bool work=true;
 
-		while(work)
-		{
-			int p = path[idx];
-			if(curNode->isLeaf)
-			{
-				result=curNode->data;
-				work=false;
-			}
-			else
-			{
-				curNode = referenceVec.data()+(curNode->leaf2*p + curNode->leaf1*(1-p));
-				idx++;
-			}
-		}
-		return result;
-	}
-
-	T followBitsDirect(const Node<T> * refVec, const unsigned char * path, size_t & idx, const size_t & ofs) const
+	inline
+	const unsigned char followBitsDirect(const Node * __restrict__ const refVec, const unsigned char * __restrict__ const path, size_t & idx, const size_t & ofs) const
 	{
-		T result;
-		const Node<T> * curNode=&root;
+		unsigned char result;
+		const Node * curNode=&root;
 		bool work=true;
 
 		while(work)
@@ -251,15 +206,14 @@ public:
 		return result;
 	}
 
-	const Node<T> * getRefData() const { return referenceVec.data(); }
+	const Node * getRefData() const { return referenceVec.data(); }
 
 	~HuffmanTree(){}
 private:
-	Node<T> root;
-	std::vector<Node<T>> referenceVec;
-	std::map<T,size_t> referenceMap;
+	Node root;
+	std::vector<Node> referenceVec;
+	std::map<unsigned char,size_t> referenceMap;
 	size_t referenceMapDirect[256];
-	std::map<T,std::vector<bool>> encodeMap;
 	std::vector<bool> encodeDirect[256];
 	int encodeDirectSize[256];
 };
@@ -380,7 +334,7 @@ public:
 		size_t pos = i0;
 		const unsigned int pL = r0+pos;
 		const unsigned char * dt = tmpData.data();
-		const Node<unsigned char> * nodePtr = descriptorCompression.getRefData();
+		const Node * nodePtr = descriptorCompression.getRefData();
 		while(pos<pL)
 		{
 			result += descriptorCompression.followBitsDirect(nodePtr,dt,pos,i03);
@@ -401,7 +355,7 @@ public:
 		size_t pos = i0;
 		const unsigned int pL = r0+pos;
 		const unsigned char * dt = tmpData.data();
-		const Node<unsigned char> * nodePtr = sequenceCompression.getRefData();
+		const Node * nodePtr = sequenceCompression.getRefData();
 		while(pos<pL)
 		{
 			result += sequenceCompression.followBitsDirect(nodePtr,dt,pos,i03);
@@ -446,8 +400,8 @@ private:
 
 	// byte data in video memories
 	VirtualMultiArray<unsigned char> data;
-	HuffmanTree<unsigned char> descriptorCompression;
-	HuffmanTree<unsigned char> sequenceCompression;
+	HuffmanTree descriptorCompression;
+	HuffmanTree sequenceCompression;
 	size_t descriptorBits;
 	size_t sequenceBits;
 	std::vector<size_t> descriptorBeginBit;
