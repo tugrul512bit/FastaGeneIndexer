@@ -1,6 +1,8 @@
 # FastaGeneIndexer
 A compressed FASTA sequence cache, backed by the combined video memory of system.
 
+Wiki: https://github.com/tugrul512bit/FastaGeneIndexer/wiki/Sub-Sequence-Query
+
 Dependencies:
 
 https://github.com/tugrul512bit/VirtualMultiArray
