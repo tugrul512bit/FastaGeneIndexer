@@ -449,11 +449,18 @@ public:
 		}
 	}
 
-	// get a gene sequence by its descriptor string
+	// get a sequence by its descriptor string
 	// thread-safe
 	std::string getSequenceByDescriptor(std::string name)
 	{
 		return getSequence(descriptorToIndex[name]);
+	}
+
+	// get a sub-sequence by its descriptor string
+	// thread-safe
+	std::string getSequenceByDescriptor(std::string name, size_t position, size_t length)
+	{
+		return getSequence(descriptorToIndex[name],position,length);
 	}
 
 	// number of sequences
