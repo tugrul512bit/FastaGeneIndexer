@@ -23,18 +23,19 @@
 
 // C++17
 
-
+// stores a bit in a byte at a position
 inline void storeBit(unsigned char & data, const bool value, const int pos) noexcept
 {
 	data = (value << pos) | (data & ~(1 << pos));
 }
 
+// loads a bit from a byte at a position
 inline bool loadBit(const unsigned char & data, const int pos) noexcept
 {
 	return (data>>pos)&1;
 }
 
-
+// Node structure for Huffman Tree On a std::vector
 struct Node
 {
 	size_t count;
@@ -45,7 +46,8 @@ struct Node
 	bool isLeaf;
 };
 
-
+// Huffman Tree that works on std::vector for more cached reads
+// 1 tree for all descriptors, 1 tree for sequences
 class HuffmanTree
 {
 
@@ -347,6 +349,7 @@ public:
 	std::string getSequence(size_t id)
 	{
 		std::string result;
+		result.reserve(sequenceSubstringStartByteOffset[id].size()*256);
 		size_t i0 = sequenceBeginBit[id];
 		unsigned int r0 = sequenceBitLength[id];
 		const size_t i03 = (i0>>3);
@@ -359,6 +362,74 @@ public:
 		while(pos<pL)
 		{
 			result += sequenceCompression.followBitsDirect(nodePtr,dt,pos,i03);
+		}
+		return result;
+	}
+
+
+	// get a sub-string of a sequence at index=id, without line-feed characters
+	// thread-safe
+	// id: sequence id
+	// startPos: local starting position of substring
+	// length: length of the substring
+	std::string getSequence(size_t id, size_t startPos, size_t length)
+	{
+		// get subsequence
+		size_t sub256 = startPos&255;
+		size_t div256 = startPos/256;
+
+		size_t div256end = (startPos+length)/256;
+		size_t sub = sequenceSubstringStartByteOffset[id][div256];
+
+		size_t subEnd = 0;
+		if(div256end +1 < sequenceSubstringStartByteOffset[id].size())
+		{
+			subEnd = sequenceSubstringStartByteOffset[id][div256end+1];
+		}
+		else
+		{
+			if(id + 1 < sequenceBeginBit.size())
+			{
+				subEnd = sequenceBeginBit[id+1]; // end of sequence = beginning of next descriptor
+			}
+			else
+			{
+				subEnd = sequenceBits + descriptorBits; // end of bit stream
+			}
+		}
+
+		size_t diff = subEnd - sub;
+
+		// get sequence
+		std::string result;
+		result.reserve(length);
+		size_t i0 = sequenceBeginBit[id] + sub;
+		unsigned int r0 = sequenceBitLength[id] - sub;
+		const size_t i03 = (i0>>3);
+		const int r1 = (r0>>3) + 1;
+
+		// worst case scenario: 1 symbol = 256 bits = 32 bytes
+		int assumed = (diff/8) + 1;
+
+		std::vector<unsigned char> tmpData = data.readOnlyGetN(i03,(r1<assumed)?r1:assumed);
+		size_t pos = i0;
+		const unsigned int pL = r0+pos;
+		const unsigned char * dt = tmpData.data();
+		const Node * nodePtr = sequenceCompression.getRefData();
+		size_t symbolCount = 0;
+		while(symbolCount < sub256)
+		{
+
+			const unsigned char symbol = sequenceCompression.followBitsDirect(nodePtr,dt,pos,i03);
+
+			symbolCount++;
+		}
+		symbolCount = 0;
+		while(symbolCount<length)
+		{
+			const unsigned char symbol = sequenceCompression.followBitsDirect(nodePtr,dt,pos,i03);
+			result += symbol;
+			symbolCount++;
 		}
 		return result;
 	}
@@ -398,20 +469,55 @@ public:
 	}
 private:
 
-	// byte data in video memories
+	// video-memory backed, static sized, unsigned char array
 	VirtualMultiArray<unsigned char> data;
+
+	// Huffman tree for all descriptors
 	HuffmanTree descriptorCompression;
+
+	// Huffman Tree for all sequences
 	HuffmanTree sequenceCompression;
+
+	// number of total descriptor bits
 	size_t descriptorBits;
+
+	// number of total sequence bits
 	size_t sequenceBits;
+
+	// first bit index of descriptors
 	std::vector<size_t> descriptorBeginBit;
+
+	// first bit index of sequences
 	std::vector<size_t> sequenceBeginBit;
+
+	// number of bits per descriptor
 	std::vector<int> descriptorBitLength;
+
+	// number of bits per sequence
 	std::vector<int> sequenceBitLength;
+
+	// how many sequences in file
 	size_t fileDescriptorN;
+
+	// page size for virtual array to do paging with fixed size
 	size_t pageSize;
+
+	// size of file read buffer which is also integer multiple of pageSize of virtual array
 	size_t sizeIO;
+
+	// initDescriptorIndexMapping() initializes
+	// getSequenceByDescriptor() reads
+	// to access a sequence by (uncompressed) descriptor name. todo: optimize for space with Huffman Encoding
 	std::map<std::string,size_t> descriptorToIndex;
+
+	// first dimension: sequence id
+	// second dimension: consecutive bit offset
+	// {{500,850,1250}} means:
+	// 						0th sequence's first 256 symbols are separated from next 256 symbols by 500th bit
+	// 						0th sequence's second 256 symbols are separated from next 256 symbols by 850th bit
+	// 						0th sequence's third 256 symbols are separated from next K symbols by 1250th bit
+	std::vector<std::vector<int>> sequenceSubstringStartByteOffset;
+
 
 	// returns file size in resolution of 1024*1024*16 bytes (for the paging performance of virtual array)
 	// will require to set '\0' for excessive bytes of last block
@@ -520,6 +626,7 @@ private:
 	{
 		sequenceBits=0;
 		descriptorBits=0;
+		sequenceSubstringStartByteOffset = std::vector<std::vector<int>>(fileDescriptorN,std::vector<int>());
 		std::ifstream bigFile(inFile);
 		const size_t bufferSize = sizeIO;
 		std::vector<unsigned char> buf;
@@ -531,6 +638,9 @@ private:
 		bool encodingDescriptor = false;
 		bool encodingSequence = false;
 		int encodedLength = 0;
+		size_t subSequenceBitCounter = 0;
+		size_t sequenceCounter = 0;
+		size_t subSequenceByteCounter = 0;
 		while(bigFile)
 		{
 			if(debug)
@@ -565,6 +675,9 @@ private:
 					encodingDescriptor = true;
 					encodingSequence = false;
 					encodedLength = 0;
+					subSequenceBitCounter = 0;
+					subSequenceByteCounter = 0;
+					sequenceCounter++;
 					continue;
 				}
 
@@ -597,7 +710,17 @@ private:
 
 				if(encodingSequence)
 				{
-					sequenceBits += sequenceCompression.generateBitsSize(elm);
+					const int & sizeBit = sequenceCompression.generateBitsSize(elm);
+
+					// no symbol can reach 300 bits length
+					if((subSequenceByteCounter&255) == 0)
+					{
+						sequenceSubstringStartByteOffset[sequenceCounter-1].push_back(subSequenceBitCounter);
+						subSequenceByteCounter = 0;
+					}
+					subSequenceByteCounter++;
+					subSequenceBitCounter += sizeBit;
+					sequenceBits += sizeBit;
 
 				}
 
