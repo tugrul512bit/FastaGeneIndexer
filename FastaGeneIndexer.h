@@ -331,7 +331,7 @@ public:
 		size_t i0 = descriptorBeginBit[id];
 		unsigned int r0 = descriptorBitLength[id];
 		const size_t i03 = (i0>>3);
-		const int r1 = (r0>>3) + 1;
+		const int r1 = (r0>>3) + 32;
 		std::vector<unsigned char> tmpData = data.readOnlyGetN(i03,r1);
 		size_t pos = i0;
 		const unsigned int pL = r0+pos;
