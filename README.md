@@ -1,5 +1,5 @@
 # FastaGeneIndexer
-A compressed FASTA sequence cache, backed by the combined video memory of system.
+A compressed nucleobase sequence cache for FASTA formatted files, backed by the combined graphics-card-memory of system with 1 microsecond sub-sequence access latency and 300+MB/s throughput using multithreaded queries, on a low-end computer (fx8150 cpu + 3x low-end gpus).
 
 Wiki: https://github.com/tugrul512bit/FastaGeneIndexer/wiki/Sub-Sequence-Query
 
