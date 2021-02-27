@@ -349,11 +349,11 @@ public:
 	std::string getSequence(size_t id)
 	{
 		std::string result;
-		result.reserve(sequenceSubstringStartByteOffset[id].size()*256);
+		result.reserve((sequenceSubstringStartByteOffset[id].size()+1)*256);
 		size_t i0 = sequenceBeginBit[id];
 		unsigned int r0 = sequenceBitLength[id];
 		const size_t i03 = (i0>>3);
-		const int r1 = (r0>>3) + 1;
+		const int r1 = (r0>>3) + 32;
 		std::vector<unsigned char> tmpData = data.readOnlyGetN(i03,r1);
 		size_t pos = i0;
 		const unsigned int pL = r0+pos;
@@ -406,10 +406,10 @@ public:
 		size_t i0 = sequenceBeginBit[id] + sub;
 		unsigned int r0 = sequenceBitLength[id] - sub;
 		const size_t i03 = (i0>>3);
-		const int r1 = (r0>>3) + 1;
+		const int r1 = (r0>>3) + 32;
 
 		// worst case scenario: 1 symbol = 256 bits = 32 bytes
-		int assumed = (diff/8) + 1;
+		int assumed = (diff/8) + 32;
 
 		std::vector<unsigned char> tmpData = data.readOnlyGetN(i03,(r1<assumed)?r1:assumed);
 		size_t pos = i0;
