@@ -228,7 +228,11 @@ class FastaGeneIndexer
 {
 public:
 	FastaGeneIndexer(){}
-	FastaGeneIndexer(std::string fileName, bool debug=false){
+
+	// fileName: name of FASTA formatted fa/fna/faa file
+	// debug: output file parsing & Huffman Encoding phases on cout
+	// useMoreRAM: let caching use more RAM to increase throughput in multithreaded access
+	FastaGeneIndexer(std::string fileName, bool debug=false, bool useMoreRAM=false){
 		fileDescriptorN=0;
 		sizeIO = 1024*1024*16;
 		// get file size
@@ -281,9 +285,19 @@ public:
 				pageSize /= 2;
 			}
 
-			while(pageSize > (256*1024))
+			if(!useMoreRAM)
 			{
-				pageSize /= 2;
+				while(pageSize > (128*1024))
+				{
+					pageSize /= 2;
+				}
+			}
+			else
+			{
+				while(pageSize > (256*1024))
+				{
+					pageSize /= 2;
+				}
 			}
 
 			while(pageSize > (totalBytes / 128))
@@ -292,9 +306,17 @@ public:
 			}
 
 			int numCachePerGpu = sizeIO / pageSize;
-			if(numCachePerGpu>5)
-				numCachePerGpu=5;
 
+			if(!useMoreRAM)
+			{
+				if(numCachePerGpu>5)
+					numCachePerGpu=5;
+			}
+			else
+			{
+				if(numCachePerGpu>20)
+					numCachePerGpu=20;
+			}
 
 			size_t n = totalBytes + pageSize - (totalBytes%pageSize);
 
@@ -305,7 +327,17 @@ public:
 				std::cout<<"file i/o size = "<<sizeIO<<" bytes"<<std::endl;
 			}
 			GraphicsCardSupplyDepot gpu;
-			data = VirtualMultiArray<unsigned char>(n,gpu.requestGpus(),pageSize,numCachePerGpu,/*{24,24,24}*/{1,1,1,1,1,1,1,1,1,1,1,1},VirtualMultiArray<unsigned char>::MemMult::UseVramRatios);
+			std::vector<ClDevice> dev = gpu.requestGpus();
+			std::vector<int> memMult;
+			int memMultMul = (useMoreRAM?3:1);
+
+
+			for(int i=0;i<dev.size();i++)
+			{
+				memMult.push_back(dev[i].vramSize() * memMultMul);
+			}
+
+			data = VirtualMultiArray<unsigned char>(n,dev,pageSize,numCachePerGpu,memMult);
 		}
 
 		if(debug)
@@ -503,10 +535,10 @@ private:
 	std::vector<size_t> sequenceBeginBit;
 
 	// number of bits per descriptor
-	std::vector<int> descriptorBitLength;
+	std::vector<size_t> descriptorBitLength;
 
 	// number of bits per sequence
-	std::vector<int> sequenceBitLength;
+	std::vector<size_t> sequenceBitLength;
 
 	// how many sequences in file
 	size_t fileDescriptorN;
@@ -528,7 +560,7 @@ private:
 	// 						0th sequence's first 256 symbols are separated from next 256 symbols by 500th bit
 	// 						0th sequence's second 256 symbols are separated from next 256 symbols by 850th bit
 	// 						0th sequence's third 256 symbols are separated from next K symbols by 1250th bit
-	std::vector<std::vector<int>> sequenceSubstringStartByteOffset;
+	std::vector<std::vector<size_t>> sequenceSubstringStartByteOffset;
 
 
 	// returns file size in resolution of 1024*1024*16 bytes (for the paging performance of virtual array)
@@ -551,7 +583,7 @@ private:
 		int ctrDebug = 0;
 		bool encodingDescriptor = false;
 		bool encodingSequence = false;
-		int encodedLength = 0;
+		size_t encodedLength = 0;
 		while(bigFile)
 		{
 			if(debug)
@@ -638,7 +670,7 @@ private:
 	{
 		sequenceBits=0;
 		descriptorBits=0;
-		sequenceSubstringStartByteOffset = std::vector<std::vector<int>>(fileDescriptorN,std::vector<int>());
+		sequenceSubstringStartByteOffset = std::vector<std::vector<size_t>>(fileDescriptorN,std::vector<size_t>());
 		std::ifstream bigFile(inFile);
 		const size_t bufferSize = sizeIO;
 		std::vector<unsigned char> buf;
@@ -649,7 +681,7 @@ private:
 		int ctrDebug = 0;
 		bool encodingDescriptor = false;
 		bool encodingSequence = false;
-		int encodedLength = 0;
+		size_t encodedLength = 0;
 		size_t subSequenceBitCounter = 0;
 		size_t sequenceCounter = 0;
 		size_t subSequenceByteCounter = 0;
@@ -769,8 +801,8 @@ private:
 
 		bool encodingDescriptor = false;
 		bool encodingSequence = false;
-		int encodedLength = 0;
-		int encodedBitLength = 0;
+		size_t encodedLength = 0;
+		size_t encodedBitLength = 0;
 		size_t descriptorBeginCtr = 0;
 		size_t descriptorLengthCtr = 0;
 		size_t sequenceBeginCtr = 0;
