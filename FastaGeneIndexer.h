@@ -8,8 +8,8 @@
 #ifndef FASTAGENEINDEXER_H_
 #define FASTAGENEINDEXER_H_
 
-#include "lib/GraphicsCardSupplyDepot.h"
-#include "lib/VirtualMultiArray.h"
+#include "../GraphicsCardSupplyDepot.h"
+#include "../VirtualMultiArray.h"
 #include <fstream>
 #include <algorithm>
 #include <omp.h>
@@ -281,14 +281,19 @@ public:
 				pageSize /= 2;
 			}
 
-			while(pageSize > (totalBytes / 12))
+			while(pageSize > (256*1024))
+			{
+				pageSize /= 2;
+			}
+
+			while(pageSize > (totalBytes / 128))
 			{
 				pageSize /= 2;
 			}
 
 			int numCachePerGpu = sizeIO / pageSize;
-			if(numCachePerGpu>15)
-				numCachePerGpu=15;
+			if(numCachePerGpu>5)
+				numCachePerGpu=5;
 
 
 			size_t n = totalBytes + pageSize - (totalBytes%pageSize);
@@ -300,7 +305,7 @@ public:
 				std::cout<<"file i/o size = "<<sizeIO<<" bytes"<<std::endl;
 			}
 			GraphicsCardSupplyDepot gpu;
-			data = VirtualMultiArray<unsigned char>(n,gpu.requestGpus(),pageSize,numCachePerGpu,{1,1,1,1,1,1,1,1,1,1,1,1},VirtualMultiArray<unsigned char>::MemMult::UseVramRatios);
+			data = VirtualMultiArray<unsigned char>(n,gpu.requestGpus(),pageSize,numCachePerGpu,/*{24,24,24}*/{1,1,1,1,1,1,1,1,1,1,1,1},VirtualMultiArray<unsigned char>::MemMult::UseVramRatios);
 		}
 
 		if(debug)
