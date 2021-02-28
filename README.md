@@ -103,6 +103,15 @@ int main(int argC, char** argV)
                  cache.getSequence(i);
              }
          }
+	 
+	 {
+             CpuBenchmarker bench(50000,"read 10k sub-sequences(5 symbols each), single-thread",10000);
+
+             for(int i=0;i<10000;i++)
+             {
+                 cache.getSequence(i,5,5);
+             }
+         }
     }
     catch(std::exception & e)
     {
@@ -125,7 +134,7 @@ read 10k sequences, single thread: 176683019 nanoseconds
 read 10k sequences, multi-thread: 37886537 nanoseconds     
 (bandwidth = 299.84 MB/s)      (throughput = 3788.65 nanoseconds per iteration) 
 
+read 10k sub-sequences(5 symbols each), single-thread: 11770656 nanoseconds     
+(bandwidth = 4.25 MB/s)      (throughput = 1177.07 nanoseconds per iteration)
+
 ```
-
-Single-symbol sub-sequence query latency approaches pci-e latency which is around 1 microsecond and still scale with multithreading for lower average latencies.
-
