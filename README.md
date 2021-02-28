@@ -139,4 +139,4 @@ read 10k sub-sequences(5 symbols each), single-thread: 11770656 nanoseconds
 
 ```
 
-Just reading 5 nucleobase symbols is as fast as 1MIOPS per CPU thread, on a slow development machine. If queries are in page cache (in the internal virtual array), then latency drops to ~100 nanoseconds (also multi-threaded bandwidth increases to ~400 MB/s).
+Just reading 5 nucleobase symbols is as fast as 1million queries per second per CPU thread, on a slow development machine. If queries are in page cache (in the internal virtual array), then latency drops to ~100 nanoseconds (also multi-threaded bandwidth increases to ~400 MB/s).
