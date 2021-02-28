@@ -8,8 +8,8 @@
 #ifndef FASTAGENEINDEXER_H_
 #define FASTAGENEINDEXER_H_
 
-#include "lib/GraphicsCardSupplyDepot.h"
-#include "lib/VirtualMultiArray.h"
+#include "../GraphicsCardSupplyDepot.h"
+#include "../VirtualMultiArray.h"
 #include <fstream>
 #include <algorithm>
 #include <omp.h>
@@ -588,7 +588,7 @@ private:
 					continue;
 				}
 
-				if((elm=='\n' || elm=='\r' || elm=='\0') && encodingDescriptor && encodedLength>0)
+				if(encodingDescriptor && (elm=='\n' || elm=='\r' || elm=='\0') && (encodedLength>0))
 				{
 					encodingDescriptor = false;
 					encodingSequence = true;
@@ -596,7 +596,7 @@ private:
 					continue;
 				}
 
-				if((elm=='\0') && encodingSequence && encodedLength>0)
+				if((elm=='\0') && encodingSequence && (encodedLength>0))
 				{
 					encodingDescriptor = false;
 					encodingSequence = false;
@@ -688,7 +688,7 @@ private:
 					continue;
 				}
 
-				if((elm=='\n' || elm=='\r' || elm=='\0') && encodingDescriptor && encodedLength>0)
+				if(encodingDescriptor && (elm=='\n' || elm=='\r' || elm=='\0') && (encodedLength>0))
 				{
 					encodingDescriptor = false;
 					encodingSequence = true;
@@ -770,6 +770,7 @@ private:
 		size_t descriptorLengthCtr = 0;
 		size_t sequenceBeginCtr = 0;
 		size_t sequenceLengthCtr = 0;
+
 		while(bigFile)
 		{
 			if(debug)
@@ -814,7 +815,7 @@ private:
 					continue;
 				}
 
-				if(( (elm=='\n') || (elm=='\r') || (elm=='\0')) && encodingDescriptor && (encodedLength>0))
+				if(encodingDescriptor && ( (elm=='\n') || (elm=='\r') || (elm=='\0')) && (encodedLength>0))
 				{
 					descriptorBitLength[descriptorLengthCtr++]=encodedBitLength;
 					encodedBitLength=0;
