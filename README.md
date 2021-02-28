@@ -60,8 +60,8 @@ ATGGAGAGAATAAAAGAACTAAGAGATCTAATGTCACAGTCTCGCACTCGCGAGATACTAACCAAAACCACTGTTGACCA
 Benchmark:
 
 ```cpp
-#include "examples/FastaGeneIndexer.h"
-#include "CpuBenchmarker.h"
+#include "FastaGeneIndexer.h"
+#include "lib/CpuBenchmarker.h"
 int main(int argC, char** argV)
 {
     try
