@@ -127,3 +127,5 @@ read 10k sequences, multi-thread: 37886537 nanoseconds
 
 ```
 
+Single-symbol sub-sequence query latency approaches pci-e latency which is around 1 microsecond and still scale with multithreading for lower average latencies.
+
