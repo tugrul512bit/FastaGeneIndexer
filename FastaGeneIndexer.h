@@ -8,8 +8,8 @@
 #ifndef FASTAGENEINDEXER_H_
 #define FASTAGENEINDEXER_H_
 
-#include "../GraphicsCardSupplyDepot.h"
-#include "../VirtualMultiArray.h"
+#include "lib/GraphicsCardSupplyDepot.h"
+#include "lib/VirtualMultiArray.h"
 #include <fstream>
 #include <algorithm>
 #include <omp.h>
