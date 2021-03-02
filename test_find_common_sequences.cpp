@@ -11,6 +11,13 @@ struct Sequence
 };
 
 // compares 4 FASTA files (of chromosomes each 3.2GB), uses 5.5GB Video-RAM and ~1.5GB RAM, initializes in 180seconds, computes in 70 seconds, on fx8150 cpu
+// finds all common sequences (that are found on all files given by "files" vector)
+// example: if file 1 has ACGTACGT and if all other files have same, then result contains ACGTACGT
+//          if file 1 has ACCCCTT and if same for all other files, then result also contains ACCCCTT
+//          complexity:
+//             linear time for different length sequences (simply skips inequal length comparisons)
+//             O(N*M) when there are N number of k-length sequences in array-1 and M number of k-length sequences in array-2
+//             O(k) for string - string comparison (assuming == operator uses SSE/AVX)
 int test()
 {
     try
