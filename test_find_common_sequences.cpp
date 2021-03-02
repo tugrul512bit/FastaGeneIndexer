@@ -10,6 +10,7 @@ struct Sequence
 	size_t id;
 };
 
+// compares 4 FASTA files (of chromosomes each 3.2GB), uses 5.5GB Video-RAM and ~1.5GB RAM, initializes in 180seconds, computes in 70 seconds, on fx8150 cpu
 int test()
 {
     try
