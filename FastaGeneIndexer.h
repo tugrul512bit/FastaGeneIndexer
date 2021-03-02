@@ -379,7 +379,7 @@ public:
 
 	// get a gene descriptor at index=id without line-feed nor '>' characters
 	// thread-safe
-	std::string getDescriptor(size_t id)
+	const std::string getDescriptor(size_t id) const
 	{
 		std::string result;
 		size_t i0 = descriptorBeginBit[id];
@@ -400,7 +400,7 @@ public:
 
 	// get a gene sequence at index=id without line-feed characters
 	// thread-safe
-	std::string getSequence(size_t id)
+	const std::string getSequence(const size_t id) const
 	{
 		std::string result;
 		result.reserve((sequenceSubstringStartByteOffset[id].size()+1)*256);
@@ -426,7 +426,7 @@ public:
 	// id: sequence id
 	// startPos: local starting position of substring
 	// length: length of the substring
-	std::string getSequence(size_t id, size_t startPos, size_t length)
+	const std::string getSequence(const size_t id, const size_t startPos, const size_t length) const
 	{
 		// get subsequence
 		size_t sub256 = startPos&255;
@@ -505,20 +505,20 @@ public:
 
 	// get a sequence by its descriptor string
 	// thread-safe
-	std::string getSequenceByDescriptor(std::string name)
+	const std::string getSequenceByDescriptor(const std::string & name) const
 	{
-		return getSequence(descriptorToIndex[name]);
+		return getSequence(descriptorToIndex.at(name));
 	}
 
 	// get a sub-sequence by its descriptor string
 	// thread-safe
-	std::string getSequenceByDescriptor(std::string name, size_t position, size_t length)
+	const std::string getSequenceByDescriptor(const std::string & name, const size_t position, const size_t length) const
 	{
-		return getSequence(descriptorToIndex[name],position,length);
+		return getSequence(descriptorToIndex.at(name),position,length);
 	}
 
 	// number of sequences
-	size_t n()
+	const size_t n() const
 	{
 		return descriptorBeginBit.size();
 	}
