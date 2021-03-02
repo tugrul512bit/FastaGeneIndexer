@@ -232,7 +232,10 @@ public:
 	// fileName: name of FASTA formatted fa/fna/faa file
 	// debug: output file parsing & Huffman Encoding phases on cout
 	// useMoreRAM: let caching use more RAM to increase throughput in multithreaded access
-	FastaGeneIndexer(std::string fileName, bool debug=false, bool useMoreRAM=false){
+	// decreaseFirstCardMemoryUsage: generally, some of memory of first graphics card of system is used by OS (~400 MB for development computer).
+	// 								 true: decreases memory usage on first card by 25% (which means 2GB card saving 500 MB once other 2GB are 100% used)
+	//								 false(default): uses all
+	FastaGeneIndexer(std::string fileName, bool debug=false, bool useMoreRAM=false, bool decreaseFirstCardMemoryUsage=false){
 		fileDescriptorN=0;
 		sizeIO = 1024*1024*16;
 		// get file size
@@ -311,6 +314,13 @@ public:
 			for(int i=0;i<dev.size();i++)
 			{
 				int m = dev[i].vramSize() * memMultMul;
+				if(decreaseFirstCardMemoryUsage && (i==0))
+				{
+					m*=3;
+					m/=4;
+					if(m<1)
+						m=1;
+				}
 				memMult.push_back(m);
 				totMult += m;
 			}
