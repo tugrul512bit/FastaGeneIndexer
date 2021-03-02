@@ -19,6 +19,7 @@
 #include <mutex>
 #include <vector>
 #include <map>
+#include <atomic>
 
 
 // C++17
@@ -436,22 +437,34 @@ public:
 	const std::string getSequenceParallel(const size_t id) const
 	{
     	const long long len = getSequenceLength(id);
+     	std::vector<std::string> results;
      	std::string result;
      	result.reserve(len);
+
 
 		std::mutex mut;
 
 		const long long ps = pageSize;
+		results.resize((len/ps) + 1);
+		std::atomic<long long> vCtr;
+		vCtr.store(0);
 
 		#pragma omp parallel for
      	for(long long ictr = 0; ictr<len; ictr+=ps)
      	{
      		long long queryLength = ((ictr + ps < len) ? ps: len-ictr );
      		std::string tmp = getSequence(id,ictr,queryLength);
-
-     		std::unique_lock<std::mutex> lock(mut);
-     		result += tmp;
+     		results[ictr/ps] = tmp;
+     		vCtr++;
      	}
+
+     	const long long vn = vCtr.load();
+
+		for(long long ictr = 0;ictr<vn; ictr++)
+		{
+			result += results[ictr];
+		}
+
 		return result;
 	}
 
