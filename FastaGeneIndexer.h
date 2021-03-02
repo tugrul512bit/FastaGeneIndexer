@@ -393,12 +393,12 @@ public:
 	{
 		std::string result;
 		size_t i0 = descriptorBeginBit[id];
-		unsigned int r0 = descriptorBitLength[id];
+		size_t r0 = descriptorBitLength[id];
 		const size_t i03 = (i0>>3);
-		const int r1 = (r0>>3) + 32;
+		const size_t r1 = (r0>>3) + 32;
 		std::vector<unsigned char> tmpData = data.readOnlyGetN(i03,r1);
 		size_t pos = i0;
-		const unsigned int pL = r0+pos;
+		const size_t pL = r0+pos;
 		const unsigned char * dt = tmpData.data();
 		const Node * nodePtr = descriptorCompression.getRefData();
 		while(pos<pL)
@@ -408,25 +408,50 @@ public:
 		return result;
 	}
 
+	// returns sequence length in bytes (or symbols)
+	const size_t getSequenceLength(const size_t id) const
+	{
+		return sequenceBytes[id];
+	}
+
 	// get a gene sequence at index=id without line-feed characters
 	// thread-safe
 	const std::string getSequence(const size_t id) const
 	{
-		std::string result;
-		result.reserve((sequenceSubstringStartByteOffset[id].size()+1)*256);
-		size_t i0 = sequenceBeginBit[id];
-		unsigned int r0 = sequenceBitLength[id];
-		const size_t i03 = (i0>>3);
-		const int r1 = (r0>>3) + 32;
-		std::vector<unsigned char> tmpData = data.readOnlyGetN(i03,r1);
-		size_t pos = i0;
-		const unsigned int pL = r0+pos;
-		const unsigned char * dt = tmpData.data();
-		const Node * nodePtr = sequenceCompression.getRefData();
-		while(pos<pL)
-		{
-			result += sequenceCompression.followBitsDirect(nodePtr,dt,pos,i03);
-		}
+    	const size_t len = getSequenceLength(id);
+     	std::string result;
+     	result.reserve(len);
+     	for(size_t ictr = 0; ictr<len; ictr+=4096)
+     	{
+     		size_t queryLength = ((ictr + 4096 < len) ? 4096: len-ictr );
+     		result += getSequence(id,ictr,queryLength);
+     	}
+		return result;
+	}
+
+	// get a gene sequence at index=id without line-feed characters
+	// thread-safe
+	// uses multiple threads to gather data
+	// optimized for very long sequences (250MB+)
+	const std::string getSequenceParallel(const size_t id) const
+	{
+    	const long long len = getSequenceLength(id);
+     	std::string result;
+     	result.reserve(len);
+
+		std::mutex mut;
+
+		const long long ps = pageSize;
+
+		#pragma omp parallel for
+     	for(long long ictr = 0; ictr<len; ictr+=ps)
+     	{
+     		long long queryLength = ((ictr + ps < len) ? ps: len-ictr );
+     		std::string tmp = getSequence(id,ictr,queryLength);
+
+     		std::unique_lock<std::mutex> lock(mut);
+     		result += tmp;
+     	}
 		return result;
 	}
 
@@ -468,16 +493,16 @@ public:
 		std::string result;
 		result.reserve(length);
 		size_t i0 = sequenceBeginBit[id] + sub;
-		unsigned int r0 = sequenceBitLength[id] - sub;
+		size_t r0 = sequenceBitLength[id] - sub;
 		const size_t i03 = (i0>>3);
-		const int r1 = (r0>>3) + 32;
+		const size_t r1 = (r0>>3) + 32;
 
 		// worst case scenario: 1 symbol = 256 bits = 32 bytes
-		int assumed = (diff/8) + 32;
+		size_t assumed = (diff/8) + 32;
 
 		std::vector<unsigned char> tmpData = data.readOnlyGetN(i03,(r1<assumed)?r1:assumed);
 		size_t pos = i0;
-		const unsigned int pL = r0+pos;
+		const size_t pL = r0+pos;
 		const unsigned char * dt = tmpData.data();
 		const Node * nodePtr = sequenceCompression.getRefData();
 		size_t symbolCount = 0;
@@ -589,6 +614,8 @@ private:
 	// 						0th sequence's third 256 symbols are separated from next K symbols by 1250th bit
 	std::vector<std::vector<size_t>> sequenceSubstringStartByteOffset;
 
+	// number of bytes per sequence
+	std::vector<size_t> sequenceBytes;
 
 	// returns file size in resolution of 1024*1024*16 bytes (for the paging performance of virtual array)
 	// will require to set '\0' for excessive bytes of last block
@@ -834,7 +861,7 @@ private:
 		size_t descriptorLengthCtr = 0;
 		size_t sequenceBeginCtr = 0;
 		size_t sequenceLengthCtr = 0;
-
+		sequenceBytes.resize(fileDescriptorN);
 		while(bigFile)
 		{
 			if(debug)
@@ -868,7 +895,9 @@ private:
 					// enable descriptor tree building
 					if(encodingSequence)
 					{
-						sequenceBitLength[sequenceLengthCtr++]=encodedBitLength;
+						sequenceBitLength[sequenceLengthCtr]=encodedBitLength;
+						sequenceBytes[sequenceLengthCtr]=encodedLength;
+						sequenceLengthCtr++;
 					}
 					encodedBitLength=0;
 					encodingDescriptor = true;
@@ -892,10 +921,13 @@ private:
 
 				if((elm=='\0') && encodingSequence && encodedLength>0)
 				{
-					sequenceBitLength[sequenceLengthCtr++]=encodedBitLength;
+					sequenceBitLength[sequenceLengthCtr]=encodedBitLength;
+					sequenceBytes[sequenceLengthCtr]=encodedLength;
+					sequenceLengthCtr++;
 					encodedBitLength=0;
 					encodingDescriptor = false;
 					encodingSequence = false;
+
 					encodedLength = 0;
 					continue;
 				}
