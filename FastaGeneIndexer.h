@@ -300,9 +300,35 @@ public:
 				}
 			}
 
-			while(pageSize > (totalBytes / 128))
+
+
+			GraphicsCardSupplyDepot gpu;
+			std::vector<ClDevice> dev = gpu.requestGpus();
+			std::vector<int> memMult;
+			int memMultMul = (useMoreRAM?3:1);
+			int totMult = 0;
+			int totMult2 = 1;
+			for(int i=0;i<dev.size();i++)
+			{
+				int m = dev[i].vramSize() * memMultMul;
+				memMult.push_back(m);
+				totMult += m;
+			}
+
+			while(totMult2<totMult)
+			{
+				totMult2 *= 2;
+			}
+
+
+			while(pageSize > (totalBytes / totMult2))
 			{
 				pageSize /= 2;
+			}
+
+			if(pageSize == 0)
+			{
+				pageSize = 1;
 			}
 
 			int numCachePerGpu = sizeIO / pageSize;
@@ -318,7 +344,7 @@ public:
 					numCachePerGpu=20;
 			}
 
-			size_t n = totalBytes + pageSize - (totalBytes%pageSize);
+			size_t n = totalBytes + pageSize*32 - (totalBytes%pageSize);
 
 			if(debug)
 			{
@@ -326,16 +352,7 @@ public:
 				std::cout<<"virtual array size = "<<n<<" bytes"<<std::endl;
 				std::cout<<"file i/o size = "<<sizeIO<<" bytes"<<std::endl;
 			}
-			GraphicsCardSupplyDepot gpu;
-			std::vector<ClDevice> dev = gpu.requestGpus();
-			std::vector<int> memMult;
-			int memMultMul = (useMoreRAM?3:1);
 
-
-			for(int i=0;i<dev.size();i++)
-			{
-				memMult.push_back(dev[i].vramSize() * memMultMul);
-			}
 
 			data = VirtualMultiArray<unsigned char>(n,dev,pageSize,numCachePerGpu,memMult);
 		}
