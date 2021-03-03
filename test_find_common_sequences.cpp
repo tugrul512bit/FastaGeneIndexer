@@ -35,7 +35,8 @@ int test()
     	std::vector<Sequence> sortedSeq[n];
 
 
-
+    	// total bytes read during test
+    	size_t tot = 0;
         bool debug = true;
         FastaGeneIndexer cache[n];
 
@@ -69,6 +70,8 @@ int test()
 
         	auto intersection = [&](int cacheId1, int cacheId2)
 			{
+        		std::mutex m;
+
         		CpuBenchmarker bench(0,"------- Finding common sequence(file vs file) ------------");
 				size_t ctr1 = 0;
 				size_t ctr2 = 0;
@@ -98,13 +101,19 @@ int test()
 						}
 						size_t ctrtmp2block = ctrtmp2x;
 
+
 						for(size_t ctrtmp1 = 0; ctrtmp1<ctrtmp1block; ctrtmp1++)
 						{
+							auto data1 = cache[cacheId1].getSequenceParallel(sortedSeq[cacheId1][ctr1+ctrtmp1].id);
+							tot += sortedSeq[cacheId1][ctr1+ctrtmp1].size;
 							for(size_t ctrtmp2 = 0; ctrtmp2<ctrtmp2block; ctrtmp2++)
 							{
+
+								tot += sortedSeq[cacheId2][ctr2+ctrtmp2].size;
 								// since sizes equal, direct comparison doable
-								if(cache[cacheId1].getSequenceParallel(sortedSeq[cacheId1][ctr1+ctrtmp1].id) == cache[cacheId2].getSequenceParallel(sortedSeq[cacheId2][ctr2+ctrtmp2].id))
+								if( data1 == cache[cacheId2].getSequenceParallel(sortedSeq[cacheId2][ctr2+ctrtmp2].id))
 								{
+
 									// cache-m's ctr1 seq = cache-n's ctr2 seq
 									result[std::tuple<int,int>(cacheId1,ctr1+ctrtmp1)]=true;
 								}
@@ -178,10 +187,13 @@ int test()
 
     						for(size_t ctrtmp1 = 0; ctrtmp1<ctrtmp1block; ctrtmp1++)
     						{
+    							auto data1 = cache[0].getSequenceParallel(previousVec[ctr1+ctrtmp1].id);
+    							tot += previousVec[ctr1+ctrtmp1].size;
     							for(size_t ctrtmp2 = 0; ctrtmp2<ctrtmp2block; ctrtmp2++)
     							{
+    								tot += sortedSeq[cacheId][ctr2+ctrtmp2].size;
     								// since sizes equal, direct comparison doable
-    								if(cache[0].getSequenceParallel(previousVec[ctr1+ctrtmp1].id) == cache[cacheId].getSequenceParallel(sortedSeq[cacheId][ctr2+ctrtmp2].id))
+    								if(data1 == cache[cacheId].getSequenceParallel(sortedSeq[cacheId][ctr2+ctrtmp2].id))
     								{
     									// cache-m's ctr1 seq = cache-n's ctr2 seq
     									mapOut[std::tuple<int,int>(0,ctr1+ctrtmp1)]=true;
@@ -227,6 +239,8 @@ int test()
         		std::cout<<(cache[std::get<0>(e.first)].getSequence(std::get<1>(e.first),0,100)+std::string("..."))<<std::endl;
         	std::cout<<"---------"<<std::endl;
         }
+
+        std::cout<<"total bytes read after init: "<<tot<<std::endl;
     }
     catch(std::exception & e)
     {
