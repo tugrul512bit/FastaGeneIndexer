@@ -211,8 +211,8 @@ public:
 
 	const Node * getRefData() const { return referenceVec.data(); }
 
-	std::vector<unsigned char> produce(std::string str, size_t& szTotal)
-	{
+	    std::vector<unsigned char> produce(std::string str, size_t& szTotal)
+	    {
 		szTotal=0;
 		std::vector<unsigned char> result;
 		unsigned char data = 0;
@@ -226,35 +226,41 @@ public:
 
 		    for(int i=0;i<vec.size();i++)
 		    {
+
 			storeBit(data,vec[i], pos++);
 			needWrite=true;
 			if(pos==8)
 			{
+
+			    result.push_back(data);
 			    pos=0;
 			    data=0;
-			    result.push_back(data);
 			    needWrite=false;
+
 			}
 
 		    }
 
 		}
 		if(needWrite)
-	    		result.push_back(data);
+		    result.push_back(data);
 
 		return result;
-	}
+	    }
 
-	std::string consume(std::vector<unsigned char> bits, size_t szTotal)
-	{
+	    std::string consume(std::vector<unsigned char> bits, size_t szTotal)
+	    {
 		const Node * nodePtr = getRefData();
 		std::string resultStr;
 		size_t idx = 0;
 		size_t ofs = 0;
 		while(idx<szTotal)
-	    		resultStr += followBitsDirect(nodePtr, bits.data(),  idx,ofs);
+		{
+			resultStr += followBitsDirect(nodePtr, bits.data(),  idx,ofs);
+		}
 		return resultStr;
-	}
+
+	    }
 	
 	~HuffmanTree(){}
 private:
